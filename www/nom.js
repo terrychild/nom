@@ -9,19 +9,40 @@ function debounce(callback, time) {
     };
 }
 
+const HEIGHT = 256;
+const WIDTH = Math.floor(HEIGHT * 19.5 / 9);
+const BLOCK_SIZE = 64;
+const FLOORS = 3;
+const FLOOR_HEIGHT = 16;
+const LADDER_WIDTH = 32;
+const LADDERS = 5;
+const LADDER_MIN = 2;
+const LADDER_MAX = 6;
+const NOM_POS = 1;
+
 export function nom(parentElement) {
     let mode = "loading";
 
-    const floors = [
-        240,
-        162,
-        80
-    ];
+    const floors = [];
+    for (let floor = 0; floor < FLOORS; floor++) {
+        floors[floor] = HEIGHT - (FLOOR_HEIGHT * (floor + 1)) - (BLOCK_SIZE * floor);
+    }
+    let floor = 1;
+
+    const ladders = [[], []];
+    for (let floor = 0; floor < FLOORS - 1; floor++) {
+        ladders[floor][0] = (Math.floor(Math.random() * LADDER_MAX) + LADDER_MIN + (NOM_POS * 2)) * BLOCK_SIZE;
+        for (let ladder = 1; ladder < LADDERS; ladder++) {
+            ladders[floor][ladder] = ((Math.floor(Math.random() * LADDER_MAX) + LADDER_MIN) * BLOCK_SIZE) + ladders[floor][ladder-1];
+        }
+    }
+    let distance = 0;
 
 
     // load stuff
     const images = new Images();
     images.load("floor.png");
+    images.load("ladder.png");
     images.load("nom_c.png");
     images.load("nom_r.png");
     images.load("nom_l.png");
@@ -40,8 +61,8 @@ export function nom(parentElement) {
     // painting
     const canvas = Canvas.new({
         parentElement,
-        height: 256,
-        width: Math.floor(256 * 19.5 / 9),
+        height: HEIGHT,
+        width: WIDTH,
         forceLandscape: true,
     });
 
@@ -65,13 +86,19 @@ export function nom(parentElement) {
                 .fillStyle("rgb(0, 0, 0)")
                 .fillRect(0, 0, size.x, size.y);
 
-            for (let i=0; i<(size.x/64)+1; i++) {
+            canvas.drawImage(noms[Math.floor(frame/6)], NOM_POS * BLOCK_SIZE, floors[floor] - BLOCK_SIZE);
+
+            const offset = distance % BLOCK_SIZE;
+            for (let i=0; i<(size.x/BLOCK_SIZE)+1; i++) {
                 for (const floor of floors) {
-                    canvas.drawImage(images.floor, (i*64)-offset, floor);    
+                    canvas.drawImage(images.floor, (i*BLOCK_SIZE)-offset, floor);    
                 }
             }
-
-            canvas.drawImage(noms[Math.floor(frame/6)], 64, floors[1] - 64);
+            for (let floor = 0; floor < FLOORS - 1; floor++) {
+                for (const ladder of ladders[floor]) {
+                    canvas.drawImage(images.ladder, ladder - distance, floors[floor] - BLOCK_SIZE);
+                }
+            }
 
             canvas.restore();
         }
@@ -89,12 +116,21 @@ export function nom(parentElement) {
     function animate() {
         paint();
         requestAnimationFrame(animate);
-        offset = (offset + 4) % 64;
-        frame = (frame + 1) % 24;
+        if (mode == "game") {
+            distance += 4;
+            frame = (frame + 1) % 24;
+
+            for (let floor = 0; floor < 2; floor++) {
+                if (ladders[floor][0] < distance - 32) {
+                    console.log("ladder on ", floor);
+                    ladders[floor].shift();
+                    ladders[floor].push(((Math.floor(Math.random() * LADDER_MAX) + LADDER_MIN) * BLOCK_SIZE) + ladders[floor][LADDERS-2]);
+                }
+            }
+        }
     }
 
     requestAnimationFrame(animate);
 
-    let offset = 0;
     let frame = 0;
 }
