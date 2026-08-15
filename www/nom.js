@@ -13,7 +13,9 @@ export function nom(parentElement) {
 
     const canvas = Canvas.new({
         parentElement,
-        onResize: debounce(() => paint, 50),
+        height: 256,
+        width: Math.floor(256 * 19.5 / 9),
+        forceLandscape: true,
     });
 
     function paint() {
