@@ -22,6 +22,7 @@ const NOM_POS = 1;
 
 export function nom(parentElement) {
     let mode = "loading";
+    let startTime;
 
     const floors = [];
     for (let floor = 0; floor < FLOORS; floor++) {
@@ -56,6 +57,7 @@ export function nom(parentElement) {
 
     images.loaded(() => {
         mode = "game";
+        startTime = undefined;
     });
 
     // painting
@@ -86,7 +88,7 @@ export function nom(parentElement) {
                 .fillStyle("rgb(0, 0, 0)")
                 .fillRect(0, 0, size.x, size.y);
 
-            canvas.drawImage(noms[Math.floor(frame/6)], NOM_POS * BLOCK_SIZE, floors[floor] - BLOCK_SIZE);
+            canvas.drawImage(noms[frame % 4], NOM_POS * BLOCK_SIZE, floors[floor] - BLOCK_SIZE);
 
             const offset = distance % BLOCK_SIZE;
             for (let i=0; i<(size.x/BLOCK_SIZE)+1; i++) {
@@ -113,12 +115,15 @@ export function nom(parentElement) {
             .restore()
     }
 
-    function animate() {
-        paint();
-        requestAnimationFrame(animate);
+    function animate(currentTime) {
+        if (startTime === undefined) {
+            startTime = currentTime;
+        }
+        const elapsedTime = currentTime - startTime;
+
         if (mode == "game") {
-            distance += 4;
-            frame = (frame + 1) % 24;
+            frame = Math.round(elapsedTime / 60);
+            distance = Math.round(elapsedTime / 5);
 
             for (let floor = 0; floor < 2; floor++) {
                 if (ladders[floor][0] < distance - 32) {
@@ -128,6 +133,8 @@ export function nom(parentElement) {
                 }
             }
         }
+        paint();
+        requestAnimationFrame(animate);
     }
 
     requestAnimationFrame(animate);
