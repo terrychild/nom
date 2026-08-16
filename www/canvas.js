@@ -85,7 +85,24 @@ export class Canvas {
             this.#ctx.rect(0, 0, this.#width, this.#height);
             this.#ctx.clip();
 
-        })).observe(this.#canvas);        
+        })).observe(this.#canvas);
+
+        // Interaction
+        if (options.touch) {
+            this.#canvas.addEventListener("touchstart", this.#touchStart.bind(this, options.touch));
+            this.#canvas.addEventListener("mousedown", this.#mouseEvent.bind(this, "start", options.touch));
+
+            this.#canvas.addEventListener("touchmove", this.#touchEvent.bind(this, "move", options.touch));
+            this.#canvas.addEventListener("mousemove", this.#mouseEvent.bind(this, "move", options.touch));
+
+            this.#canvas.addEventListener("touchend", this.#touchEvent.bind(this, "end", options.touch));
+            this.#canvas.addEventListener("mouseup", this.#mouseEvent.bind(this, "end", options.touch));
+            this.#canvas.addEventListener("mouseout", this.#mouseEvent.bind(this, "end", options.touch));
+        }
+    }
+
+    get canvas() {
+        return this.#canvas;
     }
 
     get ctx() {
@@ -94,5 +111,49 @@ export class Canvas {
 
     get bottomRight() {
         return new Point(this.#width, this.#height);
+    }
+
+    #getTouchPoint(x, y) {
+        let bounds = this.#canvas.getBoundingClientRect();
+        return (new Point(x, y))
+            .scale(window.devicePixelRatio)
+            .translate(-bounds.left, -bounds.top)
+            .translate(-this.#offsetX, -this.#offsetY)
+            .rotate(-this.#rotation)
+            .translate(0, this.#translation)
+            .scale(1 / this.#scale);
+    }
+
+    #getTouchRadius(touch) {
+        return (touch.radiusX + touch.radiusY)/2 * window.devicePixelRatio;
+    }
+
+    #touchId;
+    #touchStart(listener, event) {
+        if(event.touches.length==1) { //TODO: detect last touch instead???
+            event.preventDefault();
+            this.#touchId = event.touches[0].identifier;
+            listener({type: "start", point: this.#getTouchPoint(event.touches[0].clientX, event.touches[0].clientY), radius: this.#getTouchRadius(event.touches[0])});
+        }
+    }
+    #touchEvent(type, listener, event) {
+        let touches = event.changedTouches;
+        for(let i=0; i<touches.length; i++) {
+            if(touches[i].identifier==this.#touchId) {
+                event.preventDefault();
+                listener({type: type, point: this.#getTouchPoint(touches[i].clientX, touches[i].clientY), radius: this.#getTouchRadius(touches[i])});
+            }
+        }
+    }
+
+    #mouseEvent(type, listener, event) {
+        event.preventDefault();
+        listener({type: type, point: this.#getTouchPoint(event.clientX, event.clientY), radius: 1});
+    }
+
+    #keyEvent(type, listener, event) {
+        event.preventDefault();
+        console.log(event);
+        listener({type: type, key: event.key, original: event});
     }
 }
