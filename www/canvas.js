@@ -109,19 +109,24 @@ export class Canvas {
         return this.#ctx;
     }
 
+    get topCentre() {
+        return new Point(this.#width/2, 0);
+    }
+
     get bottomRight() {
         return new Point(this.#width, this.#height);
     }
 
     #getTouchPoint(x, y) {
         let bounds = this.#canvas.getBoundingClientRect();
+
         return (new Point(x, y))
             .scale(window.devicePixelRatio)
             .translate(-bounds.left, -bounds.top)
-            .translate(-this.#offsetX, -this.#offsetY)
+            .scale(1 / this.#scale)            
             .rotate(-this.#rotation)
             .translate(0, this.#translation)
-            .scale(1 / this.#scale);
+            .translate(-this.#offsetX, -this.#offsetY);
     }
 
     #getTouchRadius(touch) {

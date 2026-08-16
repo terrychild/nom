@@ -93,6 +93,16 @@ export function nom(parentElement) {
             canvas.restore();
         }
 
+        // full screen
+        canvas
+            .save()
+            .font("8px monospace")
+            .fillStyle("rgb(63, 63, 63)")
+            .textAlign("center")
+            .textBaseline("top")            
+            .fillText("fullscreen", size.x/2, 5)
+            .restore()
+
         // debug
         canvas
             .save()
@@ -136,7 +146,18 @@ export function nom(parentElement) {
                 }
                 break;
             case "end":
-                startPoint = undefined;
+                if (startPoint) {
+                    if (Math.abs(event.point.y - startPoint.y) < 5) {
+                        if (event.point.distanceTo(canvas.topCentre) < 40) {
+                            if (document.fullscreenElement) {
+                                document.exitFullscreen();
+                            } else {
+                                canvas.canvas.requestFullscreen()
+                            }
+                        }
+                    }
+                    startPoint = undefined;
+                }
                 break;
         }
     }
