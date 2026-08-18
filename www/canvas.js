@@ -96,6 +96,7 @@ export class Canvas {
             this.#canvas.addEventListener("mousemove", this.#mouseEvent.bind(this, "move", options.touch));
 
             this.#canvas.addEventListener("touchend", this.#touchEvent.bind(this, "end", options.touch));
+            this.#canvas.addEventListener("touchcancel", this.#touchEvent.bind(this, "end", options.touch));
             this.#canvas.addEventListener("mouseup", this.#mouseEvent.bind(this, "end", options.touch));
             this.#canvas.addEventListener("mouseout", this.#mouseEvent.bind(this, "end", options.touch));
         }
@@ -151,14 +152,22 @@ export class Canvas {
         }
     }
 
+    #mouseOn = false;
     #mouseEvent(type, listener, event) {
-        event.preventDefault();
-        listener({type: type, point: this.#getTouchPoint(event.clientX, event.clientY), radius: 1});
+        if (type == "start") {
+            this.#mouseOn = true;
+        }
+        if (this.#mouseOn) {
+            event.preventDefault();
+            listener({type: type, point: this.#getTouchPoint(event.clientX, event.clientY), radius: 1});
+        }
+        if (type == "end") {
+            this.#mouseOn = false;
+        }
     }
 
     #keyEvent(type, listener, event) {
         event.preventDefault();
-        console.log(event);
         listener({type: type, key: event.key, original: event});
     }
 }
