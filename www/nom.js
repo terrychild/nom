@@ -22,6 +22,11 @@ const LADDER_WIDTH = 32;
 const LADDERS = 5;
 const LADDER_MIN = 2;
 const LADDER_MAX = 6;
+const SNACKS = 24;
+const SNACKS_MIN = 1;
+const SNACKS_MAX = 6;
+const SNACK_POS = 24;
+const SNACK_SIZE = 5;
 const NOM_POS = 1;
 
 export function nom(parentElement) {
@@ -79,12 +84,23 @@ export function nom(parentElement) {
             canvas.drawImage(noms[frame % 4], NOM_POS * BLOCK_SIZE, floors[floor] - BLOCK_SIZE - climb);
 
             const offset = distance % BLOCK_SIZE;
+
             for (let i=0; i<(size.x/BLOCK_SIZE)+1; i++) {
                 for (const floor of floors) {
                     canvas.drawImage(images.floor, (i*BLOCK_SIZE)-offset, floor);    
                 }
             }
+            
             for (let floor = 0; floor < FLOORS - 1; floor++) {
+                for (const snack of snacks[floor]) {
+                    canvas
+                        .save()
+                        .fillStyle("rgb(255, 255, 255)")
+                        .beginPath()
+                        .arc(snack - distance, floors[floor] - SNACK_POS, SNACK_SIZE, 0, 2 * Math.PI)
+                        .fill()
+                        .restore();
+                }
                 for (const ladder of ladders[floor]) {
                     canvas.drawImage(images.ladder, ladder - distance, floors[floor] - BLOCK_SIZE);
                 }
@@ -173,7 +189,8 @@ export function nom(parentElement) {
     let direction;
     let move;
 
-    const ladders = [];    
+    const ladders = [];
+    const snacks = [];
     
     let startTime;
     let frame;
@@ -192,6 +209,12 @@ export function nom(parentElement) {
             ladders[floor][0] = (Math.floor(Math.random() * LADDER_MAX) + LADDER_MIN + (NOM_POS * 2)) * BLOCK_SIZE;
             for (let ladder = 1; ladder < LADDERS; ladder++) {
                 ladders[floor][ladder] = ((Math.floor(Math.random() * LADDER_MAX) + LADDER_MIN) * BLOCK_SIZE) + ladders[floor][ladder-1];
+            }
+
+            snacks[floor] = [];
+            snacks[floor][0] = (Math.floor(Math.random() * SNACKS_MAX) + SNACKS_MIN + (Math.ceil(WIDTH / BLOCK_SIZE))) * BLOCK_SIZE + (BLOCK_SIZE / 2);
+            for (let snack = 1; snack < SNACKS; snack++) {
+                snacks[floor][snack] = ((Math.floor(Math.random() * SNACKS_MAX) + SNACKS_MIN) * BLOCK_SIZE) + snacks[floor][snack-1] + (BLOCK_SIZE / 2);
             }
         }
 
@@ -236,9 +259,12 @@ export function nom(parentElement) {
             if (direction == 0) {
                 distance += delta;
                 for (let floor = 0; floor < 2; floor++) {
-                    if (ladders[floor][0] < distance - 32) {
+                    if (ladders[floor][0] < distance - (BLOCK_SIZE / 2)) {
                         ladders[floor].shift();
                         ladders[floor].push(((Math.floor(Math.random() * LADDER_MAX) + LADDER_MIN) * BLOCK_SIZE) + ladders[floor][LADDERS-2]);
+                    }
+                    if (snacks[floor][0] < distance - (BLOCK_SIZE / 2)) {
+                        snacks[floor].push(((Math.floor(Math.random() * SNACKS_MAX) + SNACKS_MIN) * BLOCK_SIZE) + snacks[floor][SNACKS-2] + (BLOCK_SIZE / 2));
                     }
                 }
             } else {
