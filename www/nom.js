@@ -16,17 +16,16 @@ function isTouchDevice() {
 const HEIGHT = 256;
 const WIDTH = Math.floor(HEIGHT * 19.5 / 9);
 const BLOCK_SIZE = 64;
+const BLOCKS_X = Math.ceil(WIDTH / BLOCK_SIZE) + 1;
 const FLOORS = 3;
 const FLOOR_HEIGHT = 16;
 const LADDER_WIDTH = 32;
-const LADDERS = 5;
+const LADDER_CHANCE = 0.183;
 const LADDER_MIN = 2;
 const LADDER_MAX = 6;
-const SNACKS = 24;
-const SNACKS_MIN = 1;
-const SNACKS_MAX = 6;
-const SNACK_POS = 24;
-const SNACK_SIZE = 5;
+const SNACK_Y = 20;
+const SNACK_SIZE = 4;
+const SNACK_CHANCE = 0.333;
 const NOM_POS = 1;
 
 export function nom(parentElement) {
@@ -81,32 +80,36 @@ export function nom(parentElement) {
                 .fillStyle("rgb(0, 0, 0)")
                 .fillRect(0, 0, size.x, size.y);
 
-            canvas.drawImage(noms[frame % 4], NOM_POS * BLOCK_SIZE, floors[floor] - BLOCK_SIZE - climb);
-
-            const offset = distance % BLOCK_SIZE;
+            canvas.drawImage(noms[frame % 4], NOM_POS * BLOCK_SIZE, floors[floor] - BLOCK_SIZE - offsetY);
 
             for (let i=0; i<(size.x/BLOCK_SIZE)+1; i++) {
                 for (const floor of floors) {
-                    canvas.drawImage(images.floor, (i*BLOCK_SIZE)-offset, floor);    
+                    canvas.drawImage(images.floor, (i * BLOCK_SIZE) - offsetX, floor);
                 }
             }
             
-            for (let floor = 0; floor < FLOORS - 1; floor++) {
-                for (const snack of snacks[floor]) {
+            for (let floor = 0; floor < FLOORS; floor++) {
+                for (let x=0; x<BLOCKS_X; x++) {
+                    if (floor < FLOORS - 1 && ladders[floor][x]) {
+                        canvas.drawImage(images.ladder, (x * BLOCK_SIZE) - offsetX + ((BLOCK_SIZE - LADDER_WIDTH) / 2), floors[floor] - BLOCK_SIZE);
+                    }
+                    if (snacks[floor][x]) {
+                        canvas
+                            .save()
+                            .fillStyle("rgb(255, 255, 255)")
+                            .beginPath()
+                            .arc((x * BLOCK_SIZE) - offsetX + (BLOCK_SIZE / 2), floors[floor] - SNACK_Y, SNACK_SIZE, 0, 2 * Math.PI)
+                            .fill()
+                            .restore();
+                    }
+
                     canvas
                         .save()
-                        .fillStyle("rgb(255, 255, 255)")
-                        .beginPath()
-                        .arc(snack - distance, floors[floor] - SNACK_POS, SNACK_SIZE, 0, 2 * Math.PI)
-                        .fill()
+                        .strokeStyle("rgb(255, 255, 255)")
+                        .strokeRect((x * BLOCK_SIZE) - offsetX, floors[floor] - BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
                         .restore();
                 }
-                for (const ladder of ladders[floor]) {
-                    canvas.drawImage(images.ladder, ladder - distance, floors[floor] - BLOCK_SIZE);
-                }
             }
-
-            canvas.restore();
         }
 
         // full screen
@@ -184,8 +187,8 @@ export function nom(parentElement) {
         floors[floor] = HEIGHT - (FLOOR_HEIGHT * (floor + 1)) - (BLOCK_SIZE * floor);
     }
     let floor;
-    let climb;
-    let distance;
+    let offsetX;
+    let offsetY;
     let direction;
     let move;
 
@@ -199,23 +202,17 @@ export function nom(parentElement) {
         mode = "game";
 
         floor = 1;
-        climb = 0;
-        distance = 0;
+        offsetX = 0;
+        offsetY = 0;
         direction = 0;
         move = 0;
 
-        for (let floor = 0; floor < FLOORS - 1; floor++) {
-            ladders[floor] = [];
-            ladders[floor][0] = (Math.floor(Math.random() * LADDER_MAX) + LADDER_MIN + (NOM_POS * 2)) * BLOCK_SIZE;
-            for (let ladder = 1; ladder < LADDERS; ladder++) {
-                ladders[floor][ladder] = ((Math.floor(Math.random() * LADDER_MAX) + LADDER_MIN) * BLOCK_SIZE) + ladders[floor][ladder-1];
+        for (let floor = 0; floor < FLOORS; floor++) {
+            if (floor < FLOORS - 1) {
+                ladders[floor] = Array.from({length: BLOCKS_X}, (v) => false);
+                ladders[floor][NOM_POS + LADDER_MIN + Math.floor(Math.random() * (BLOCKS_X - NOM_POS - LADDER_MIN))] = true;
             }
-
-            snacks[floor] = [];
-            snacks[floor][0] = (Math.floor(Math.random() * SNACKS_MAX) + SNACKS_MIN + (Math.ceil(WIDTH / BLOCK_SIZE))) * BLOCK_SIZE + (BLOCK_SIZE / 2);
-            for (let snack = 1; snack < SNACKS; snack++) {
-                snacks[floor][snack] = ((Math.floor(Math.random() * SNACKS_MAX) + SNACKS_MIN) * BLOCK_SIZE) + snacks[floor][snack-1] + (BLOCK_SIZE / 2);
-            }
+            snacks[floor] = Array.from({length: BLOCKS_X}, (v) => false);
         }
 
         startTime = undefined;
@@ -225,15 +222,15 @@ export function nom(parentElement) {
 
     function moveUp() {
         if (floor < FLOORS-1) {
-            if (ladders[floor].map(ladder => (ladder - distance) / BLOCK_SIZE).find(ladder => ladder > NOM_POS + 0.25 && ladder < NOM_POS + 1.25)) {
+            if (ladders[floor][NOM_POS + 1]) {
                 debug = "up";
-                move = 1;
+                move = 1;5
             }
         }
     }
     function moveDown() {
         if (floor > 0) {
-            if (ladders[floor-1].map(ladder => (ladder - distance) / BLOCK_SIZE).find(ladder => ladder > NOM_POS + 0.25 && ladder < NOM_POS + 1.25)) {
+            if (ladders[floor-1][NOM_POS + 1]) {
                 debug = "down";
                 move = -1;
             }
@@ -251,29 +248,32 @@ export function nom(parentElement) {
             let delta = Math.min(Math.round(elapsedTime / 5), 4);
 
             if (direction == 0 && move != 0) {
-                if (ladders[move > 0 ? floor : floor-1].map(ladder => (ladder - distance) / BLOCK_SIZE).find(ladder => ladder > NOM_POS && ladder < NOM_POS + 0.3)) {
+                if (offsetX < 4 || offsetX > BLOCK_SIZE - 4) {
                     direction = move;
                 }
             }
 
             if (direction == 0) {
-                distance += delta;
-                for (let floor = 0; floor < 2; floor++) {
-                    if (ladders[floor][0] < distance - (BLOCK_SIZE / 2)) {
-                        ladders[floor].shift();
-                        ladders[floor].push(((Math.floor(Math.random() * LADDER_MAX) + LADDER_MIN) * BLOCK_SIZE) + ladders[floor][LADDERS-2]);
-                    }
-                    if (snacks[floor][0] < distance - (BLOCK_SIZE / 2)) {
-                        snacks[floor].push(((Math.floor(Math.random() * SNACKS_MAX) + SNACKS_MIN) * BLOCK_SIZE) + snacks[floor][SNACKS-2] + (BLOCK_SIZE / 2));
+                offsetX += delta;
+                if (offsetX > BLOCK_SIZE) {
+                    offsetX %= BLOCK_SIZE;
+                    for (let floor = 0; floor < FLOORS; floor++) {
+                        if (floor < FLOORS - 1) {
+                            ladders[floor].shift();
+                            let lastLadder = BLOCKS_X - ladders[floor].lastIndexOf(true) - 1;
+                            ladders[floor].push(lastLadder > LADDER_MAX ? true : lastLadder < LADDER_MIN ? false : Math.random() < LADDER_CHANCE);
+                        }
+                        snacks[floor].shift();
+                        snacks[floor].push(floor == FLOORS - 1 || !ladders[floor][BLOCKS_X - 1] ? Math.random() < SNACK_CHANCE : false);
                     }
                 }
             } else {
-                if (climb < BLOCK_SIZE && climb > -BLOCK_SIZE) {
-                    climb += delta * direction;
+                if (offsetY < BLOCK_SIZE && offsetY > -BLOCK_SIZE) {
+                    offsetY += delta * direction;
                 } else {
                     floor += direction;
                     move = 0;
-                    climb = 0;
+                    offsetY = 0;
                     direction = 0;
                     debug = "";
                 }
