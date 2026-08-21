@@ -15,6 +15,7 @@ function isTouchDevice() {
 
 const DEBUG = true;
 
+const FPS = 60;
 const HEIGHT = 256;
 const WIDTH = Math.floor(HEIGHT * 19.5 / 9);
 const BLOCK_SIZE = 64;
@@ -84,7 +85,7 @@ export function nom(parentElement) {
                 .fillRect(0, 0, size.x, size.y);
 
             // nom
-            canvas.drawImage(noms[frame % 4], NOM_POS * BLOCK_SIZE, floors[floor] - BLOCK_SIZE - offsetY);
+            canvas.drawImage(noms[Math.floor(frame / 5) % noms.length], NOM_POS * BLOCK_SIZE, floors[floor] - BLOCK_SIZE - offsetY);
 
             // floors
             for (let floor = 0; floor < FLOORS; floor++) {
@@ -230,6 +231,7 @@ export function nom(parentElement) {
     let offsetY;
     let direction;
     let move;
+    let speed;
 
     const ladders = [];
     const snacks = [];
@@ -249,6 +251,7 @@ export function nom(parentElement) {
         offsetY = 0;
         direction = 0;
         move = 0;
+        speed = 2;
 
         for (let floor = 0; floor < FLOORS; floor++) {
             ladders[floor] = Array.from({length: BLOCKS_X}, (v) => false);
@@ -258,6 +261,7 @@ export function nom(parentElement) {
         score = 0;
 
         startTime = undefined;
+        frame = 0;
 
         requestAnimationFrame(animate);
     }
@@ -283,12 +287,11 @@ export function nom(parentElement) {
         if (startTime === undefined) {
             startTime = currentTime;
         }
-        const elapsedTime = currentTime - startTime;
+        const newFrame = Math.round((currentTime - startTime) / 1000 * FPS) % FPS;
+        const delta = (newFrame - frame + (newFrame < frame ? FPS : 0)) * speed;
+        frame = newFrame;
 
         if (mode == "game") {
-            frame = Math.round(elapsedTime / 60);
-            let delta = Math.min(Math.round(elapsedTime / 5), 2);
-
             if (aligned && direction == 0 && move != 0) {
                 direction = move;
             }
