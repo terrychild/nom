@@ -325,7 +325,7 @@ export function nom(parentElement) {
                 }
 
                 square = offsetX < BLOCK_SIZE / 2 ? NOM_POS : NOM_POS + 1;
-                aligned = offsetX > BLOCK_SIZE - WIGGLE;
+                aligned = offsetX < WIGGLE || offsetX > BLOCK_SIZE - WIGGLE;
 
                 if (aligned && snacks[floor][square]) {
                     snacks[floor][square] = false;
