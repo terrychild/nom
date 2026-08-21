@@ -268,7 +268,7 @@ export function nom(parentElement) {
 
     function moveUp() {
         if (floor < FLOORS-1) {
-            if (ladders[floor][NOM_POS + 1]) {
+            if (ladders[floor][square]) {
                 debug = "up";
                 move = 1;5
             }
@@ -276,7 +276,7 @@ export function nom(parentElement) {
     }
     function moveDown() {
         if (floor > 0) {
-            if (ladders[floor-1][NOM_POS + 1]) {
+            if (ladders[floor-1][square]) {
                 debug = "down";
                 move = -1;
             }
@@ -324,7 +324,7 @@ export function nom(parentElement) {
                     }
                 }
 
-                square = offsetX < BLOCK_SIZE / 2 ? NOM_POS : NOM_POS + 1;
+                square = offsetX < WIGGLE ? NOM_POS : NOM_POS + 1;
                 aligned = offsetX < WIGGLE || offsetX > BLOCK_SIZE - WIGGLE;
 
                 if (aligned && snacks[floor][square]) {
