@@ -41,14 +41,17 @@ export function nom(parentElement) {
     images.load("floor.png");
     images.load("ladder.png");
     images.load("nom_c.png");
+    images.load("nom_co.png");
     images.load("nom_r.png");
+    images.load("nom_ro.png");
     images.load("nom_l.png");
+    images.load("nom_lo.png");
 
     const noms = [
-        images.nom_c,
-        images.nom_r,
-        images.nom_c,
-        images.nom_l,
+        [images.nom_c, images.nom_co],
+        [images.nom_r, images.nom_ro],
+        [images.nom_c, images.nom_co],
+        [images.nom_l, images.nom_lo],
     ];
 
     images.loaded(() => {
@@ -85,7 +88,7 @@ export function nom(parentElement) {
                 .fillRect(0, 0, size.x, size.y);
 
             // nom
-            canvas.drawImage(noms[Math.floor(frame / 5) % noms.length], NOM_POS * BLOCK_SIZE, floors[floor] - BLOCK_SIZE - offsetY);
+            canvas.drawImage(noms[Math.floor(frame / 5) % noms.length][snacks[floor][square] && offsetX > (BLOCK_SIZE / 2) ? 1 : 0], NOM_POS * BLOCK_SIZE, floors[floor] - BLOCK_SIZE - offsetY);
 
             // floors
             for (let floor = 0; floor < FLOORS; floor++) {
