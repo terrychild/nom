@@ -13,15 +13,15 @@ function isTouchDevice() {
     return ('ontouchstart' in window) || navigator.maxTouchPoints>0 || navigator.msMaxTouchPoints>0;
 }
 
-const DEBUG = true;
+const DEBUG = false;
 
 const FPS = 60;
-const HEIGHT = 256;
+const HEIGHT = 336;
 const WIDTH = Math.floor(HEIGHT * 19.5 / 9);
 const BLOCK_SIZE = 64;
 const BLOCKS_X = Math.ceil(WIDTH / BLOCK_SIZE) + 1;
 const WIGGLE = 4;
-const FLOORS = 3;
+const FLOORS = 4;
 const FLOOR_HEIGHT = 16;
 const LADDER_WIDTH = 32;
 const LADDER_CHANCE = 0.25;
@@ -144,7 +144,7 @@ export function nom(parentElement) {
                 .fillStyle("rgb(255, 255, 255)")
                 .textAlign("right")
                 .textBaseline("top")            
-                .fillText(score, size.x-5, 5)
+                .fillText(score, size.x-15, 5)
                 .restore()
         }
 
@@ -165,7 +165,7 @@ export function nom(parentElement) {
                 .font("8px monospace")
                 .fillStyle("rgb(63, 255, 63)")
                 .textBaseline("top")
-                .fillText(debug, 5, 5)
+                .fillText(debug, 15, 5)
                 .restore()
         }
     }
@@ -251,7 +251,7 @@ export function nom(parentElement) {
         offsetY = 0;
         direction = 0;
         move = 0;
-        speed = 2;
+        speed = 3;
 
         for (let floor = 0; floor < FLOORS; floor++) {
             ladders[floor] = Array.from({length: BLOCKS_X}, (v) => false);
