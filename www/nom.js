@@ -28,8 +28,7 @@ const LADDER_CHANCE = 0.25;
 const LADDER_MIN = 2;
 const LADDER_MAX = 6;
 const SNACK_Y = 20;
-const SNACK_SIZE = 4;
-const SNACK_CHANCE = 0.333;
+const SNACK_CHANCE = 0.183;
 const NOM_POS = 1;
 
 export function nom(parentElement) {
@@ -57,6 +56,40 @@ export function nom(parentElement) {
     images.loaded(() => {
         start();
     });
+
+    // snack styles
+    const snack_scores = [];
+    snack_scores.push(...Array.from({length: 500}, (v) => 1));
+    snack_scores.push(...Array.from({length: 200}, (v) => 3));
+    snack_scores.push(...Array.from({length: 100}, (v) => 5));
+    snack_scores.push(...Array.from({length: 50}, (v) => 10));
+    snack_scores.push(...Array.from({length: 30}, (v) => 30));
+    snack_scores.push(...Array.from({length: 10}, (v) => 50));
+    snack_scores.push(...Array.from({length: 5}, (v) => 100));
+    snack_scores.push(...Array.from({length: 3}, (v) => 300));
+    snack_scores.push(...Array.from({length: 1}, (v) => 500));
+
+    const snack_styles = [];
+    snack_styles[1] = "rgb(0, 191, 0)";
+    snack_styles[3] = "rgb(0, 0, 223)";
+    snack_styles[5] = "rgb(191, 0, 0)";
+    snack_styles[10] = "rgb(0, 255, 0)";
+    snack_styles[30] = "rgb(0, 0, 255)";
+    snack_styles[50] = "rgb(255, 0, 0)";
+    snack_styles[100] = "rgb(255, 0, 255)";
+    snack_styles[300] = "rgb(255, 165, 0)";
+    snack_styles[500] = "rgb(63, 63, 63)";
+
+    const snack_sizes = [];
+    snack_sizes[1] = 4;
+    snack_sizes[3] = 4;
+    snack_sizes[5] = 4;
+    snack_sizes[10] = 6;
+    snack_sizes[30] = 6;
+    snack_sizes[50] = 6;
+    snack_sizes[100] = 8;
+    snack_sizes[300] = 8;
+    snack_sizes[500] = 8;
 
     // painting
     const canvas = Canvas.new({
@@ -88,7 +121,7 @@ export function nom(parentElement) {
                 .fillRect(0, 0, size.x, size.y);
 
             // nom
-            canvas.drawImage(noms[Math.floor(frame / 5) % noms.length][snacks[floor][square] && offsetX > (BLOCK_SIZE / 2) ? 1 : 0], NOM_POS * BLOCK_SIZE, floors[floor] - BLOCK_SIZE - offsetY);
+            canvas.drawImage(noms[Math.floor(frame / 5) % noms.length][snacks[floor][square] > 0 && offsetX > (BLOCK_SIZE / 2) ? 1 : 0], NOM_POS * BLOCK_SIZE, floors[floor] - BLOCK_SIZE - offsetY);
 
             // floors
             for (let floor = 0; floor < FLOORS; floor++) {
@@ -102,12 +135,12 @@ export function nom(parentElement) {
                     }
 
                     // snack
-                    if (snacks[floor][x]) {
+                    if (snacks[floor][x] > 0) {
                         canvas
                             .save()
-                            .fillStyle("rgb(255, 255, 255)")
+                            .fillStyle(snack_styles[snacks[floor][x]])
                             .beginPath()
-                            .arc((x * BLOCK_SIZE) - offsetX + (BLOCK_SIZE / 2), floors[floor] - SNACK_Y, SNACK_SIZE, 0, 2 * Math.PI)
+                            .arc((x * BLOCK_SIZE) - offsetX + (BLOCK_SIZE / 2), floors[floor] - SNACK_Y, snack_sizes[snacks[floor][x]], 0, 2 * Math.PI)
                             .fill()
                             .restore();
                     }
@@ -147,7 +180,7 @@ export function nom(parentElement) {
                 .fillStyle("rgb(255, 255, 255)")
                 .textAlign("right")
                 .textBaseline("top")            
-                .fillText(score, size.x-15, 5)
+                .fillText(score, size.x-20, 5)
                 .restore()
         }
 
@@ -168,7 +201,7 @@ export function nom(parentElement) {
                 .font("8px monospace")
                 .fillStyle("rgb(63, 255, 63)")
                 .textBaseline("top")
-                .fillText(debug, 15, 5)
+                .fillText(debug, 20, 5)
                 .restore()
         }
     }
@@ -228,6 +261,7 @@ export function nom(parentElement) {
         floors[floor] = HEIGHT - (FLOOR_HEIGHT * (floor + 1)) - (BLOCK_SIZE * floor);
     }
     let floor;
+    let snack_floor;
     let square;
     let aligned;
     let offsetX;
@@ -248,6 +282,7 @@ export function nom(parentElement) {
         mode = "game";
 
         floor = 1;
+        snack_floor = 1;
         square = NOM_POS;
         aligned = true;
         offsetX = 0;
@@ -258,7 +293,7 @@ export function nom(parentElement) {
 
         for (let floor = 0; floor < FLOORS; floor++) {
             ladders[floor] = Array.from({length: BLOCKS_X}, (v) => false);
-            snacks[floor] = Array.from({length: BLOCKS_X}, (v) => false);
+            snacks[floor] = Array.from({length: BLOCKS_X}, (v) => 0);
         }
 
         score = 0;
@@ -322,17 +357,30 @@ export function nom(parentElement) {
                                 }
                             }
                         }
+
                         snacks[floor].shift();
-                        snacks[floor].push(!ladders[floor][BLOCKS_X - 1] ? Math.random() < SNACK_CHANCE : false);
+                        if (ladders[floor][BLOCKS_X - 1] || (floor > 0 && ladders[floor - 1][BLOCKS_X - 1])) {
+                            snacks[floor].push(0);
+                        } else if (floor == snack_floor || Math.random() < SNACK_CHANCE) {
+                            snacks[floor].push(snack_scores[Math.floor(Math.random() * snack_scores.length)]);
+                        } else {
+                            snacks[floor].push(0);
+                        }
+                    }
+
+                    if (ladders[snack_floor][BLOCKS_X - 1]) {
+                        snack_floor += 1;
+                    } else if (snack_floor > 0 && ladders[snack_floor - 1][BLOCKS_X - 1]) {
+                        snack_floor -= 1;
                     }
                 }
 
                 square = offsetX < WIGGLE ? NOM_POS : NOM_POS + 1;
                 aligned = offsetX < WIGGLE || offsetX > BLOCK_SIZE - WIGGLE;
 
-                if (aligned && snacks[floor][square]) {
-                    snacks[floor][square] = false;
-                    score += 1;
+                if (aligned && snacks[floor][square] > 0) {
+                    score += snacks[floor][square];
+                    snacks[floor][square] = 0;
                 }
             } else {
                 if (offsetY < BLOCK_SIZE + FLOOR_HEIGHT && offsetY > -(BLOCK_SIZE + FLOOR_HEIGHT)) {
